@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: teste-grupo-primo
+server:
+  port: 8080
+
+logging:
+  file:
+    name: ${java.io.tmpdir}/logs/${spring.application.name}.log
+  level:
+    root: debug
