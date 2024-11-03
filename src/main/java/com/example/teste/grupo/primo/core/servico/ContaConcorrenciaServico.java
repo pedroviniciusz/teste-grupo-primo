@@ -1,9 +1,9 @@
 package com.example.teste.grupo.primo.core.servico;
 
 import com.example.teste.grupo.primo.core.entidade.Conta;
-import com.example.teste.grupo.primo.core.execao.BadRequestException;
 import com.example.teste.grupo.primo.core.execao.EntityNotFoundException;
 import com.example.teste.grupo.primo.core.repositorio.ContaRepositorio;
+import com.example.teste.grupo.primo.core.util.ContaUtil;
 import com.example.teste.grupo.primo.web.dto.DepositoDto;
 import com.example.teste.grupo.primo.web.dto.SaqueDto;
 import com.example.teste.grupo.primo.web.dto.TransferenciaDto;
@@ -11,7 +11,6 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
@@ -23,13 +22,26 @@ public class ContaConcorrenciaServico {
 
     private final ReentrantLock lock = new ReentrantLock();
 
-    public Conta findContaById(Integer id) {
+    /**
+     * Método responsável por buscar uma conta pelo ID com bloqueio pessimista de escrita.
+     * Utiliza `LockModeType.PESSIMISTIC_WRITE` para garantir que, em cenários
+     * de alta concorrência, apenas uma transação por vez possa modificar a conta
+     *
+     * @param id id da conta
+     * @return Conta
+     */
+    public Conta findWithLockingById(Integer id) {
         return contaRepositorio.findWithLockingById(id).orElseThrow(() -> new EntityNotFoundException("Conta não encontrada"));
     }
 
+    /**
+     * Método responsável por depositar uma quantidade em uma conta e chamar o servico para salvar a transacao
+     *
+     * @param depositoDto depositoDto
+     */
     @Transactional
     public void depositar(DepositoDto depositoDto) {
-        Conta conta = findContaById(depositoDto.idConta());
+        Conta conta = findWithLockingById(depositoDto.idConta());
         conta.setSaldo(conta.getSaldo().add(depositoDto.valor()));
 
         contaRepositorio.save(conta);
@@ -37,11 +49,16 @@ public class ContaConcorrenciaServico {
         transacaoServico.registrarDeposito(conta, depositoDto.valor());
     }
 
+    /**
+     * Método responsável por sacar uma quantidade em uma conta e chamar o servico para salvar a transacao
+     *
+     * @param saqueDto saqueDto
+     */
     @Transactional
     public void sacar(SaqueDto saqueDto) {
-        Conta conta = findContaById(saqueDto.idConta());
+        Conta conta = findWithLockingById(saqueDto.idConta());
 
-        validarSaldo(conta.getSaldo(), saqueDto.valor());
+        ContaUtil.validarSaldo(conta.getSaldo(), saqueDto.valor());
 
         conta.setSaldo(conta.getSaldo().subtract(saqueDto.valor()));
         contaRepositorio.save(conta);
@@ -49,15 +66,22 @@ public class ContaConcorrenciaServico {
         transacaoServico.registrarSaque(conta, saqueDto.valor());
     }
 
+    /**
+     * Método responsável por transferir uma quantidade de uma conta para a outra e chamar o servico para salvar a transacao
+     * Neste caso usamos o lock.lock() pois na concorrência 3  da tabela verdade efetuamos 2 tranferências ao mesmo tempo
+     * Nos outros casos de concorrência. não é chamado o mesmo método, somente a mesma conta
+     *
+     * @param transferenciaDto transferenciaDto
+     */
     @Transactional
-    public void transferirConcorrencia(TransferenciaDto transferenciaDto) {
+    public synchronized void transferirConcorrencia(TransferenciaDto transferenciaDto) {
         lock.lock();
         try {
-            Conta contaOrigem = findContaById(transferenciaDto.idContaOrigem());
+            Conta contaOrigem = findWithLockingById(transferenciaDto.idContaOrigem());
 
-            validarSaldo(contaOrigem.getSaldo(), transferenciaDto.valor());
+            ContaUtil.validarSaldo(contaOrigem.getSaldo(), transferenciaDto.valor());
 
-            Conta contaDestino = findContaById(transferenciaDto.idContaDestino());
+            Conta contaDestino = findWithLockingById(transferenciaDto.idContaDestino());
 
             contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(transferenciaDto.valor()));
             contaRepositorio.save(contaOrigem);
@@ -71,6 +95,11 @@ public class ContaConcorrenciaServico {
         }
     }
 
+    /**
+     * Método responsável por chamar o método de depósito e pausa a thread por 1 segundo
+     *
+     * @param depositoDto depositoDto
+     */
     @Transactional
     public void depositarConcorrencia(DepositoDto depositoDto) {
         try {
@@ -81,6 +110,11 @@ public class ContaConcorrenciaServico {
         }
     }
 
+    /**
+     * Método responsável por chamar o método de saque e pausa a thread por 1 segundo
+     *
+     * @param saqueDto saqueDto
+     */
     @Transactional
     public void sacarConcorrencia(SaqueDto saqueDto) {
         try {
@@ -90,11 +124,5 @@ public class ContaConcorrenciaServico {
             throw new RuntimeException(e);
         }
 
-    }
-
-    private void validarSaldo(BigDecimal saldo, BigDecimal valorSacar) {
-        if (saldo.compareTo(valorSacar) == -1) {
-            throw new BadRequestException("Saldo insuficiente");
-        }
     }
 }

@@ -15,6 +15,12 @@ public class TransacaoServico {
 
     private final TransacaoRepositorio transacaoRepositorio;
 
+    /**
+     * Método responsável por salvar que foi feito um depósito
+     *
+     * @param conta Conta que foi efeutado o depósito
+     * @param valor Valor que foi depositado
+     */
     public void registrarDeposito(Conta conta, BigDecimal valor) {
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoEnum.DEPOSITO);
@@ -24,6 +30,12 @@ public class TransacaoServico {
         transacaoRepositorio.save(transacao);
     }
 
+    /**
+     * Método responsável por salvar que foi feito um saque
+     *
+     * @param conta Conta que foi efeutado o saque
+     * @param valor Valor que foi sacado
+     */
     public void registrarSaque(Conta conta, BigDecimal valor) {
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoEnum.SAQUE);
@@ -33,6 +45,13 @@ public class TransacaoServico {
         transacaoRepositorio.save(transacao);
     }
 
+    /**
+     * Método responsável por salvar que foi feito uma transferencia entre contas
+     *
+     * @param contaOrigem  Conta da qual saiu o valor
+     * @param contaDestino Conta da qual entrou o valor
+     * @param valor        Valor que foi transferido
+     */
     public void registrarTransferencia(Conta contaOrigem, Conta contaDestino, BigDecimal valor) {
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoEnum.TRANSFERENCIA);

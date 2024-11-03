@@ -1,10 +1,7 @@
 package com.example.teste.grupo.primo.core.entidade;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,6 +29,9 @@ public abstract class EntidadeBase implements Serializable {
 
     @JsonIgnore
     private Boolean excluido;
+
+    @Version
+    private Long version;
 
     @PrePersist
     private void setCriado() {

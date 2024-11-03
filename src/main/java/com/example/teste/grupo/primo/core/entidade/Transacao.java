@@ -11,7 +11,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "transacao")
+@Table(name = "TRANSACAO")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -44,8 +44,5 @@ public class Transacao extends EntidadeBase {
 
     @Column(nullable = false)
     private BigDecimal valor;
-
-    @Version
-    private Long version;
 
 }

@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "conta")
+@Table(name = "CONTA")
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -27,9 +27,6 @@ public class Conta extends EntidadeBase {
 
     @Column(nullable = false)
     private BigDecimal saldo;
-
-    @Version
-    private Long version;
 
     @OneToMany(mappedBy = "conta", cascade = CascadeType.ALL)
     private List<Transacao> transacoes = new ArrayList<>();

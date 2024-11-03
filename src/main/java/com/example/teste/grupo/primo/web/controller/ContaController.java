@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping("/api/conta")
 @RequiredArgsConstructor
@@ -24,9 +26,9 @@ public class ContaController extends BaseRestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<ContaDto> criarConta() {
+    public ResponseEntity<ContaDto> criarConta(@RequestBody Long valorInicial) {
         log.info("Requisição para criar conta");
-        return writeResponseBody(ContaDto.transferToDto(contaServico.criarConta()));
+        return writeResponseBody(ContaDto.transferToDto(contaServico.criarConta(valorInicial)));
     }
 
     @PutMapping("/deposito")

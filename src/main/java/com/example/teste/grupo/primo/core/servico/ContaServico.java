@@ -1,9 +1,9 @@
 package com.example.teste.grupo.primo.core.servico;
 
 import com.example.teste.grupo.primo.core.entidade.Conta;
-import com.example.teste.grupo.primo.core.execao.BadRequestException;
 import com.example.teste.grupo.primo.core.execao.EntityNotFoundException;
 import com.example.teste.grupo.primo.core.repositorio.ContaRepositorio;
+import com.example.teste.grupo.primo.core.util.ContaUtil;
 import com.example.teste.grupo.primo.web.dto.DepositoDto;
 import com.example.teste.grupo.primo.web.dto.SaqueDto;
 import com.example.teste.grupo.primo.web.dto.TransferenciaDto;
@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -21,10 +20,22 @@ public class ContaServico {
     private final ContaRepositorio contaRepositorio;
     private final TransacaoServico transacaoServico;
 
+    /**
+     * Método responsável por buscar uma conta pelo ID, neste caso sem bloqueio pessimista
+     *
+     * @param id id da conta
+     * @return Conta
+     */
     public Conta findContaById(Integer id) {
         return contaRepositorio.findById(id).orElseThrow(() -> new EntityNotFoundException("Conta não encontrada"));
     }
 
+    /**
+     * Método responsável por depositar uma quantidade em uma conta e chamar o servico para salvar a transacao
+     *
+     * @param depositoDto depositoDto
+     * @return Conta
+     */
     @Transactional
     public Conta depositar(DepositoDto depositoDto) {
         Conta conta = findContaById(depositoDto.idConta());
@@ -37,11 +48,17 @@ public class ContaServico {
         return conta;
     }
 
+    /**
+     * Método responsável por sacar uma quantidade em uma conta e chamar o servico para salvar a transacao
+     *
+     * @param saqueDto saqueDto
+     * @return Conta
+     */
     @Transactional
     public Conta sacar(SaqueDto saqueDto) {
         Conta conta = findContaById(saqueDto.idConta());
 
-        validarSaldo(conta.getSaldo(), saqueDto.valor());
+        ContaUtil.validarSaldo(conta.getSaldo(), saqueDto.valor());
 
         conta.setSaldo(conta.getSaldo().subtract(saqueDto.valor()));
         contaRepositorio.save(conta);
@@ -51,42 +68,43 @@ public class ContaServico {
         return conta;
     }
 
+    /**
+     * Método responsável por transferir uma quantidade de uma conta para a outra e chamar o servico para salvar a transacao
+     *
+     * @param transferenciaDto transferenciaTransferenciaDto
+     * @return Conta conta
+     */
     @Transactional
-    public Conta transferir(TransferenciaDto transferenciaTransferenciaDto) {
-        Conta contaOrigem = findContaById(transferenciaTransferenciaDto.idContaOrigem());
+    public Conta transferir(TransferenciaDto transferenciaDto) {
+        Conta contaOrigem = findContaById(transferenciaDto.idContaOrigem());
 
-        validarSaldo(contaOrigem.getSaldo(), transferenciaTransferenciaDto.valor());
+        ContaUtil.validarSaldo(contaOrigem.getSaldo(), transferenciaDto.valor());
 
-        Conta contaDestino = findContaById(transferenciaTransferenciaDto.idContaDestino());
+        Conta contaDestino = findContaById(transferenciaDto.idContaDestino());
 
-        contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(transferenciaTransferenciaDto.valor()));
+        contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(transferenciaDto.valor()));
         contaRepositorio.save(contaOrigem);
 
-        contaDestino.setSaldo(contaDestino.getSaldo().add(transferenciaTransferenciaDto.valor()));
+        contaDestino.setSaldo(contaDestino.getSaldo().add(transferenciaDto.valor()));
         contaRepositorio.save(contaDestino);
 
-        transacaoServico.registrarTransferencia(contaOrigem, contaDestino, transferenciaTransferenciaDto.valor());
+        transacaoServico.registrarTransferencia(contaOrigem, contaDestino, transferenciaDto.valor());
 
         return contaOrigem;
     }
 
+    /**
+     * Método responsável por criar uma conta
+     *
+     * @return Conta
+     */
     @Transactional
-    public Conta criarConta() {
+    public Conta criarConta(Long valorInicial) {
         Conta conta = new Conta();
-        conta.setNumero(gerarNumeroConta());
-        conta.setSaldo(BigDecimal.ZERO);
+        conta.setNumero(ContaUtil.gerarNumeroConta());
+        conta.setSaldo(BigDecimal.valueOf(valorInicial));
 
         return contaRepositorio.save(conta);
     }
 
-    private static long gerarNumeroConta() {
-        Random random = new Random();
-        return Math.abs(random.nextLong() % 1_000_000_0000L);
-    }
-
-    private void validarSaldo(BigDecimal saldo, BigDecimal valorSacar) {
-        if (saldo.compareTo(valorSacar) == -1) {
-            throw new BadRequestException("Saldo insuficiente");
-        }
-    }
 }
