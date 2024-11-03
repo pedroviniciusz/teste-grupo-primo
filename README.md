@@ -45,7 +45,7 @@ O projeto foi divido em 2 controllers principais, o ContaController lida com ope
 
 Já o ContaConcorrenciaController lida com as 3 situações descritas na tabela verdade no Readme do desafio. <br />
 
-Além disso, o projeto conta com um tratamento de exceções global [GlobalExceptionHandler](https://https://github.com/pedroviniciusz/teste-grupo-primo/blob/master/src/main/java/com/example/teste/grupo/primo/web/advice/GlobalExceptionHandler.java) <br />
+Além disso, o projeto conta com um tratamento de exceções global [GlobalExceptionHandler](https://github.com/pedroviniciusz/teste-grupo-primo/blob/master/src/main/java/com/example/teste/grupo/primo/web/advice/GlobalExceptionHandler.java) <br />
 
 Bem como, o resilience4j para definirmos métricas de timeout e indisponibilidade no [application.yml](https://github.com/pedroviniciusz/teste-grupo-primo/blob/master/src/main/resources/application.yml), as quais são capturadas pelo GlobalExceptionHandler. <br />
 
