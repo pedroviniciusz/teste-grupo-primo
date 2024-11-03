@@ -45,4 +45,7 @@ public class Transacao extends EntidadeBase {
     @Column(nullable = false)
     private BigDecimal valor;
 
+    @Version
+    private Long version;
+
 }

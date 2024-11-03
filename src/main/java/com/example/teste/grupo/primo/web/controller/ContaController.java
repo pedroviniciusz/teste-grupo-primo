@@ -1,10 +1,7 @@
 package com.example.teste.grupo.primo.web.controller;
 
 import com.example.teste.grupo.primo.core.servico.ContaServico;
-import com.example.teste.grupo.primo.web.dto.ContaDto;
-import com.example.teste.grupo.primo.web.dto.DepositoDto;
-import com.example.teste.grupo.primo.web.dto.SaqueDto;
-import com.example.teste.grupo.primo.web.dto.TransferenciaDto;
+import com.example.teste.grupo.primo.web.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -45,9 +42,9 @@ public class ContaController extends BaseRestController {
     }
 
     @PutMapping("/transferencia")
-    public ResponseEntity<ContaDto> depositar(@RequestBody TransferenciaDto transferenciaDto) {
-        log.info("Requisição para transferir da conta: {} para conta: {} no valor de: {}", transferenciaDto.idContaOrigem(), transferenciaDto.idContaDestino(), transferenciaDto.valor());
-        return writeResponseBody(ContaDto.transferToDto(contaServico.transferir(transferenciaDto)));
+    public ResponseEntity<ContaDto> depositar(@RequestBody TransferenciaDto transferenciaTransferenciaDto) {
+        log.info("Requisição para transferir da conta: {} para conta: {} no valor de: {}", transferenciaTransferenciaDto.idContaOrigem(), transferenciaTransferenciaDto.idContaDestino(), transferenciaTransferenciaDto.valor());
+        return writeResponseBody(ContaDto.transferToDto(contaServico.transferir(transferenciaTransferenciaDto)));
     }
 
 

@@ -24,7 +24,7 @@ public class TransacaoServico {
         transacaoRepositorio.save(transacao);
     }
 
-    public void registrarSque(Conta conta, BigDecimal valor) {
+    public void registrarSaque(Conta conta, BigDecimal valor) {
         Transacao transacao = new Transacao();
         transacao.setTipo(TipoEnum.SAQUE);
         transacao.setConta(conta);

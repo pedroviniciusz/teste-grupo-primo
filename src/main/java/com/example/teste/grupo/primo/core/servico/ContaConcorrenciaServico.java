@@ -12,33 +12,33 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Random;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
-public class ContaServico {
+public class ContaConcorrenciaServico {
 
     private final ContaRepositorio contaRepositorio;
     private final TransacaoServico transacaoServico;
 
+    private final ReentrantLock lock = new ReentrantLock();
+
     public Conta findContaById(Integer id) {
-        return contaRepositorio.findById(id).orElseThrow(() -> new EntityNotFoundException("Conta não encontrada"));
+        return contaRepositorio.findWithLockingById(id).orElseThrow(() -> new EntityNotFoundException("Conta não encontrada"));
     }
 
     @Transactional
-    public Conta depositar(DepositoDto depositoDto) {
+    public void depositar(DepositoDto depositoDto) {
         Conta conta = findContaById(depositoDto.idConta());
         conta.setSaldo(conta.getSaldo().add(depositoDto.valor()));
 
         contaRepositorio.save(conta);
 
         transacaoServico.registrarDeposito(conta, depositoDto.valor());
-
-        return conta;
     }
 
     @Transactional
-    public Conta sacar(SaqueDto saqueDto) {
+    public void sacar(SaqueDto saqueDto) {
         Conta conta = findContaById(saqueDto.idConta());
 
         validarSaldo(conta.getSaldo(), saqueDto.valor());
@@ -47,41 +47,42 @@ public class ContaServico {
         contaRepositorio.save(conta);
 
         transacaoServico.registrarSaque(conta, saqueDto.valor());
-
-        return conta;
     }
 
     @Transactional
-    public Conta transferir(TransferenciaDto transferenciaTransferenciaDto) {
-        Conta contaOrigem = findContaById(transferenciaTransferenciaDto.idContaOrigem());
+    public void transferirConcorrencia(TransferenciaDto transferenciaDto) {
+        lock.lock();
+        try {
+            Conta contaOrigem = findContaById(transferenciaDto.idContaOrigem());
 
-        validarSaldo(contaOrigem.getSaldo(), transferenciaTransferenciaDto.valor());
+            validarSaldo(contaOrigem.getSaldo(), transferenciaDto.valor());
 
-        Conta contaDestino = findContaById(transferenciaTransferenciaDto.idContaDestino());
+            Conta contaDestino = findContaById(transferenciaDto.idContaDestino());
 
-        contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(transferenciaTransferenciaDto.valor()));
-        contaRepositorio.save(contaOrigem);
+            contaOrigem.setSaldo(contaOrigem.getSaldo().subtract(transferenciaDto.valor()));
+            contaRepositorio.save(contaOrigem);
 
-        contaDestino.setSaldo(contaDestino.getSaldo().add(transferenciaTransferenciaDto.valor()));
-        contaRepositorio.save(contaDestino);
+            contaDestino.setSaldo(contaDestino.getSaldo().add(transferenciaDto.valor()));
+            contaRepositorio.save(contaDestino);
 
-        transacaoServico.registrarTransferencia(contaOrigem, contaDestino, transferenciaTransferenciaDto.valor());
-
-        return contaOrigem;
+            transacaoServico.registrarTransferencia(contaOrigem, contaDestino, transferenciaDto.valor());
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Transactional
-    public Conta criarConta() {
-        Conta conta = new Conta();
-        conta.setNumero(gerarNumeroConta());
-        conta.setSaldo(BigDecimal.ZERO);
+    public void depositarConcorrencia(DepositoDto depositoDto) throws InterruptedException {
+        depositar(depositoDto);
 
-        return contaRepositorio.save(conta);
+        Thread.sleep(1000);
     }
 
-    private static long gerarNumeroConta() {
-        Random random = new Random();
-        return Math.abs(random.nextLong() % 1_000_000_0000L);
+    @Transactional
+    public void sacarConcorrencia(SaqueDto saqueDto) throws InterruptedException {
+        sacar(saqueDto);
+
+        Thread.sleep(1000);
     }
 
     private void validarSaldo(BigDecimal saldo, BigDecimal valorSacar) {

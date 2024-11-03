@@ -28,6 +28,9 @@ public class Conta extends EntidadeBase {
     @Column(nullable = false)
     private BigDecimal saldo;
 
+    @Version
+    private Long version;
+
     @OneToMany(mappedBy = "conta", cascade = CascadeType.ALL)
     private List<Transacao> transacoes = new ArrayList<>();
 
