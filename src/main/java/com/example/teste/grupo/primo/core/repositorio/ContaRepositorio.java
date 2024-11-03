@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface ContaRepositorio extends JpaRepository<Conta, Integer> {
 
-    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Conta>findWithLockingById(Integer id);
 
 }

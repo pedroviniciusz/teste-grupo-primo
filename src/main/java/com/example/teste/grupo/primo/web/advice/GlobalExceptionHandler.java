@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.concurrent.TimeoutException;
+
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
@@ -24,22 +26,31 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErroResponseDto> handleBadRequestException(EntityNotFoundException ex) {
+    public ResponseEntity<ErroResponseDto> handleEntityNotFounException(EntityNotFoundException ex) {
         ErroResponseDto errorResponse = ErroResponseDto.builder()
                 .httpStatus(HttpStatus.NOT_FOUND)
                 .mesagemErro(ex.getMessage())
                 .build();
-        log.error("GlobalExceptionHandler::handleEntityNotFoundException execeção lançada {}", ex.getMessage());
+        log.error("GlobalExceptionHandler::handleEntityNotFounException execeção lançada {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+    @ExceptionHandler(TimeoutException.class)
+    public ResponseEntity<ErroResponseDto> handleTimeoutException(TimeoutException ex) {
+        ErroResponseDto errorResponse = ErroResponseDto.builder()
+                .httpStatus(HttpStatus.REQUEST_TIMEOUT)
+                .mesagemErro(ex.getMessage())
+                .build();
+        log.error("GlobalExceptionHandler::handleTimeoutException execeção lançada {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErroResponseDto> handleBadRequestException(Exception ex) {
+    public ResponseEntity<ErroResponseDto> handleGenericException(Exception ex) {
         ErroResponseDto errorResponse = ErroResponseDto.builder()
                 .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR)
                 .mesagemErro(ex.getMessage())
                 .build();
-        log.error("GlobalExceptionHandler::handleEntityNotFoundException execeção lançada {}", ex.getMessage());
+        log.error("GlobalExceptionHandler::handleGenericException execeção lançada {}", ex.getMessage());
         return ResponseEntity.internalServerError().body(errorResponse);
     }
 

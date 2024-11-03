@@ -4,11 +4,16 @@ import com.example.teste.grupo.primo.core.servico.ContaConcorrenciaServico;
 import com.example.teste.grupo.primo.web.dto.concorrencia.DepositoSaqueDto;
 import com.example.teste.grupo.primo.web.dto.concorrencia.DepositoTransferenciaDto;
 import com.example.teste.grupo.primo.web.dto.concorrencia.TransferenciaTransferenciaDto;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.function.FailableRunnable;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -21,40 +26,36 @@ public class ContaConcorrenciaController extends BaseRestController {
     private final ContaConcorrenciaServico contaConcorrenciaServico;
 
     @PostMapping("/deposito-saque")
-    public void depositoSaque(@RequestBody DepositoSaqueDto depositoSaqueDto) {
+    @TimeLimiter(name = "depositoSaqueTimeLimiter")
+    public CompletableFuture<Void> depositoSaque(@RequestBody DepositoSaqueDto depositoSaqueDto) {
         log.info("Requisição para depósito e saque concorrentes");
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        executor.execute(run(() ->  contaConcorrenciaServico.depositarConcorrencia(depositoSaqueDto.depositoDto())));
-        executor.execute(run(() -> contaConcorrenciaServico.sacarConcorrencia(depositoSaqueDto.saqueDto())));
-        executor.shutdown();
+
+        CompletableFuture<Void> depositoFuture = CompletableFuture.runAsync(() -> contaConcorrenciaServico.depositarConcorrencia(depositoSaqueDto.depositoDto()));
+        CompletableFuture<Void> saqueFuture = CompletableFuture.runAsync(() -> contaConcorrenciaServico.sacarConcorrencia(depositoSaqueDto.saqueDto()));
+
+        return CompletableFuture.allOf(depositoFuture, saqueFuture);
     }
 
     @PostMapping("/deposito-transferencia")
-    public void depositoTransferencia(@RequestBody DepositoTransferenciaDto depositoTransferenciaDto) {
+    @TimeLimiter(name = "depositoTransferenciaTimeLimiter")
+    public CompletableFuture<Void> depositoTransferencia(@RequestBody DepositoTransferenciaDto depositoTransferenciaDto) {
         log.info("Requisição para depósito e saque concorrentes");
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        executor.execute(run(() ->  contaConcorrenciaServico.depositarConcorrencia(depositoTransferenciaDto.depositoDto())));
-        executor.execute(run(() -> contaConcorrenciaServico.transferirConcorrencia(depositoTransferenciaDto.transferenciaDto())));
-        executor.shutdown();
+
+        CompletableFuture<Void> depositoFuture = CompletableFuture.runAsync(() -> contaConcorrenciaServico.depositarConcorrencia(depositoTransferenciaDto.depositoDto()));
+        CompletableFuture<Void> transferenciaFuture = CompletableFuture.runAsync(() -> contaConcorrenciaServico.transferirConcorrencia(depositoTransferenciaDto.transferenciaDto()));
+
+        return CompletableFuture.allOf(depositoFuture, transferenciaFuture);
     }
 
     @PostMapping("/transferencia-transferencia")
-    public void depositoTransferencia(@RequestBody TransferenciaTransferenciaDto transferenciaDto) {
+    @TimeLimiter(name = "transferenciaTransferenciaTimeLimiter")
+    public CompletableFuture<Void> depositoTransferencia(@RequestBody TransferenciaTransferenciaDto transferenciaDto) {
         log.info("Requisição para transfência entre contas");
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        executor.execute(run(() ->  contaConcorrenciaServico.transferirConcorrencia(transferenciaDto.transferenciaDto1())));
-        executor.execute(run(() -> contaConcorrenciaServico.transferirConcorrencia(transferenciaDto.transferenciaDto2())));
-        executor.shutdown();
-    }
 
-    private Runnable run(FailableRunnable<Exception> runnable) {
-        return () -> {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        };
+        CompletableFuture<Void> transferenciaFuture = CompletableFuture.runAsync(() -> contaConcorrenciaServico.transferirConcorrencia(transferenciaDto.transferenciaDto1()));
+        CompletableFuture<Void> transferenciaFuture2 = CompletableFuture.runAsync(() -> contaConcorrenciaServico.transferirConcorrencia(transferenciaDto.transferenciaDto2()));
+
+        return CompletableFuture.allOf(transferenciaFuture, transferenciaFuture2);
     }
 
 }

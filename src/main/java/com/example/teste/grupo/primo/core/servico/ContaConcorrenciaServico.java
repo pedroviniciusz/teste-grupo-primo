@@ -72,17 +72,24 @@ public class ContaConcorrenciaServico {
     }
 
     @Transactional
-    public void depositarConcorrencia(DepositoDto depositoDto) throws InterruptedException {
-        depositar(depositoDto);
-
-        Thread.sleep(1000);
+    public void depositarConcorrencia(DepositoDto depositoDto) {
+        try {
+            depositar(depositoDto);
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Transactional
-    public void sacarConcorrencia(SaqueDto saqueDto) throws InterruptedException {
-        sacar(saqueDto);
+    public void sacarConcorrencia(SaqueDto saqueDto) {
+        try {
+            sacar(saqueDto);
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
-        Thread.sleep(1000);
     }
 
     private void validarSaldo(BigDecimal saldo, BigDecimal valorSacar) {

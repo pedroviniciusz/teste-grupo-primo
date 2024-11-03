@@ -13,7 +13,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("User API")
+                .info(new Info().title("Teste Grupo Primo")
                         .contact(new Contact().name("Pedro Vinícius").url("https://github.com/pedroviniciusz"))
                         .termsOfService("http://swagger.io/terms/")
                         .version("1.0")
